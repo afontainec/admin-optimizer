@@ -5,7 +5,8 @@ const { google } = require('googleapis');
 const TOKEN_PATH = 'token.json';
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly'];
 
-
+const SPREADSHEET_ID = '1__yqPDZ-u9thqTn8uQrNmPwa7b5qA9tKo36ylgQGWUk';
+const RECIBIDOS_HEADERS = ['Nro.', 'RUT Emisor', 'Folio', 'Fecha Docto.', 'Monto Neto', 'Monto Exento', 'Monto IVA', 'Monto Total', 'Fecha Recep.', 'Evento Receptor', 'Mapped', 'Tipo DTE'];
 const connect = async () => {
   const content = JSON.parse(fs.readFileSync('credentials.json'));
   const client = await authorize(content);
@@ -120,6 +121,78 @@ const listMajors = (auth) => {
 
 // #endregion
 
+
+const addFacturas = async (facturas) => {
+  const auth = await connect();
+  await addFacturasRecibidas(facturas.recieved, auth);
+};
+
+
+const addFacturasRecibidas = async (facturas, auth) => {
+  const registered = await getFacturasRecibidas(auth);
+  const toAdd = getNewFacturas(facturas, registered);
+  console.log(toAdd);
+};
+
+const getFacturasRecibidas = (auth) => {
+  return new Promise((resolve, reject) => {
+    const sheets = google.sheets({ version: 'v4', auth });
+    sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: 'Facturas Rec.!B3:N',
+    }, (err, res) => {
+      if (err) return reject(err);
+      const rows = res.data.values;
+      const facturas = [];
+      for (let i = 0; i < rows.length; i++) {
+        const element = rows[i];
+        const factura = parseFactura(element, RECIBIDOS_HEADERS);
+        if (factura) facturas.push(factura);
+      }
+      return resolve(facturas);
+    });
+  });
+};
+
+const parseFactura = (element, headers) => {
+  const factura = {};
+  if (!element || !element[0]) return null;
+  for (let i = 0; i < headers.length; i++) {
+    const header = headers[i];
+    factura[header] = element[i];
+  }
+  return factura;
+};
+
+const getNewFacturas = (facturas, registered) => {
+  const hashTable = toHashTable(registered);
+  const toAdd = [];
+  for (let i = 0; i < facturas.length; i++) {
+    const element = facturas[i];
+    const key = hash(element);
+    if (!hashTable[key]) {
+      toAdd.push(element);
+      registered.push(element);
+    }
+  }
+  return toAdd;
+};
+
+const toHashTable = (registered) => {
+  const table = {};
+  for (let i = 0; i < registered.length; i++) {
+    const element = registered[i];
+    const key = hash(Object.values(element));
+    table[key] = element;
+  }
+  return table;
+};
+
+const hash = (element) => {
+  return `${element[1]}_${element[2]}`;
+};
+
 module.exports = {
   connect,
+  addFacturas,
 };

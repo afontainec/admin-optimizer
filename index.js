@@ -4,8 +4,7 @@ const spreadsheet = require('./spreadsheet');
 
 const f = async () => {
   const facturas = await sii.readFacturas();
-  await spreadsheet.connect();
-  // await spreadsheet.addFacturas(facturas);
+  await spreadsheet.addFacturas(facturas);
   // await spreadsheet.mapFacturas();
   // const cartola = await bank.readCartola();
   // await spreadsheet.addCartola(cartola);
