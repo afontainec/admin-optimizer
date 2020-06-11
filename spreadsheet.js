@@ -3,7 +3,7 @@ const readline = require('readline');
 const { google } = require('googleapis');
 
 const TOKEN_PATH = 'token.json';
-const SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly'];
+const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
 
 const SPREADSHEET_ID = '1__yqPDZ-u9thqTn8uQrNmPwa7b5qA9tKo36ylgQGWUk';
 const RECIBIDOS_HEADERS = ['Nro.', 'RUT Emisor', 'Folio', 'Fecha Docto.', 'Monto Neto', 'Monto Exento', 'Monto IVA', 'Monto Total', 'Fecha Recep.', 'Evento Receptor', 'Mapped', 'Tipo DTE'];
@@ -97,14 +97,16 @@ const addFacturas = async (facturas) => {
 
 
 const addFacturasRecibidas = async (facturas, auth) => {
-  const registered = await getFacturasRecibidas(auth);
+  const sheets = google.sheets({ version: 'v4', auth });
+  const registered = await getFacturasRecibidas(sheets);
   const toAdd = getNewFacturas(facturas, registered);
+  await insertFacturasRecibidas(toAdd, sheets);
+  console.log('Facturas Recibidas Agregadas', toAdd.length);
   console.log(toAdd);
 };
 
-const getFacturasRecibidas = (auth) => {
+const getFacturasRecibidas = (sheets) => {
   return new Promise((resolve, reject) => {
-    const sheets = google.sheets({ version: 'v4', auth });
     sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
       range: 'Facturas Rec.!B3:N',
@@ -158,6 +160,20 @@ const toHashTable = (registered) => {
 
 const hash = (element) => {
   return `${element[1]}_${element[2]}`;
+};
+
+const insertFacturasRecibidas = (array, sheets) => {
+  return new Promise((resolve, reject) => {
+    sheets.spreadsheets.values.append({
+      spreadsheetId: SPREADSHEET_ID,
+      range: 'Facturas Rec.!B4:N4',
+      valueInputOption: 'RAW',
+      resource: { values: array },
+    }, (err, res) => {
+      if (err) return reject(err);
+      return resolve(res);
+    });
+  });
 };
 
 module.exports = {
