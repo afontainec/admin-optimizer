@@ -6,8 +6,8 @@ const THRESHOLD = new Date().getTime() - ONE_DAY;
 const DOWNLOADS_PATH = path.join(__dirname, '..', '..', '..', '..', '..', '..', 'Downloads');
 
 const readFacturas = async () => {
-  const files = await todayFiles(DOWNLOADS_PATH);
-  console.log(files);
+  const filenames = await todayFiles(DOWNLOADS_PATH);
+  console.log(filenames);
 };
 
 
