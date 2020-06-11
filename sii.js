@@ -5,6 +5,7 @@ const ONE_DAY = 24 * 60 * 60 * 1000;
 const THRESHOLD = new Date().getTime() - ONE_DAY;
 const DOWNLOADS_PATH = path.join(__dirname, '..', '..', '..', '..', '..', '..', 'Downloads');
 const RECIBIDOS_LENGTH = 9;
+const EMITIDOS_LENGTH = 11;
 
 const readFacturas = async () => {
   const files = await todayFiles(DOWNLOADS_PATH);
@@ -47,31 +48,38 @@ const shouldGoFile = (stats) => {
 
 const parseFiles = (files) => {
   const keys = Object.keys(files);
-  const facturas = {
-    recieved: [],
-    sent: [],
-  };
+  let recieved = [];
+  let sent = [];
   for (let i = 0; i < keys.length; i++) {
     const key = keys[i];
-    if (isReceived(key)) {
-      facturas.recieved = facturas.recieved.concat(parseAsRecieved(files[key]));
-    }
+    if (isReceived(key)) recieved = recieved.concat(parsedFacturas(files[key], RECIBIDOS_LENGTH));
+    else if (isSent(key)) sent = sent.concat(parsedFacturas(files[key], EMITIDOS_LENGTH));
+    else console.log(`EL ARCHIVO ${key} CORRESPONDE A NOTAS DE CRÉDITO. AGREGAR MANUALMENTE`);
+
   }
-  return facturas;
+  return {
+    recieved,
+    sent,
+  };
 };
 
 const isReceived = (filename) => {
   return filename.startsWith('DTE_RECIBIDOS_');
 };
 
-const parseAsRecieved = (file) => {
+const isSent = (filename) => {
+  const regex = /_61[\s.]/;
+  return !regex.test(filename);
+};
+
+const parsedFacturas = (file, n) => {
   const parsed = [];
   const lines = file.split('\n');
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i];
     const elements = line.split(';');
     if (elements[0]) {
-      const factura = extractFacturaRecibida(elements);
+      const factura = extractFactura(elements, n);
 
       parsed.push(factura);
     }
@@ -79,9 +87,9 @@ const parseAsRecieved = (file) => {
   return parsed;
 };
 
-const extractFacturaRecibida = (elements) => {
+const extractFactura = (elements, n) => {
   const factura = [];
-  for (let j = 0; j < RECIBIDOS_LENGTH; j++) {
+  for (let j = 0; j < n; j++) {
     const element = elements[j];
     if (isDate(element)) factura.push(parseToDate(element));
     else factura.push(element);
