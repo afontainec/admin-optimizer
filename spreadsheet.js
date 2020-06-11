@@ -101,6 +101,7 @@ const saveToken = (token) => {
 const addFacturas = async (facturas) => {
   const auth = await connect();
   const sheets = google.sheets({ version: 'v4', auth });
+  // const cartola =  getDebugEntries();
   await addFacturasRecibidas(facturas.recieved, sheets);
   await addFacturasEmitidas(facturas.sent, sheets);
 };
@@ -109,9 +110,11 @@ const addFacturas = async (facturas) => {
 const addFacturasRecibidas = async (facturas, sheets) => {
   const registered = await getFacturas(sheets, RECIBIDOS_INFO_RANGE, RECIBIDOS_HEADERS);
   const toAdd = getNewFacturas(facturas, registered, RECIBIDOS_FOLIO);
+  // mapToAdd(toAdd, debug);
   await insertFacturas(toAdd, sheets, RECIBIDOS_INSERT_RANGE);
   console.log('Facturas Recibidas Agregadas', toAdd.length);
   console.log(toAdd);
+  return toAdd;
 };
 
 const addFacturasEmitidas = async (facturas, sheets) => {
@@ -120,7 +123,10 @@ const addFacturasEmitidas = async (facturas, sheets) => {
   await insertFacturas(toAdd, sheets, EMITIDOS_INSERT_RANGE);
   console.log('Facturas Emitidas Agregadas', toAdd.length);
   console.log(toAdd);
+  return toAdd;
 };
+
+// #region Facturas
 
 const getFacturas = (sheets, range, headers) => {
   return new Promise((resolve, reject) => {
@@ -192,6 +198,18 @@ const insertFacturas = (array, sheets, range) => {
     });
   });
 };
+
+// #endregion
+
+// const mapToAdd = (toAdd, debug) => {
+// for (let i = 0; i < toAdd.length; i++) {
+// const element = toAdd[i];
+// const best = getBestOption(toAdd, debug);
+// ask: La mejor combina que hemos pillado es la siguiente: mappear?
+// if(ask) element.push(1);
+// mapped = debug.push(best);
+// }
+// }
 
 module.exports = {
   connect,
