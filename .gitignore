@@ -14,3 +14,7 @@ mails.xlsx
 !.vscode/launch.json
 !.vscode/extensions.json
 .history/*
+
+# CUSTOM
+credentials.json
+token.json
