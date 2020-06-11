@@ -7,6 +7,14 @@ const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
 
 const SPREADSHEET_ID = '1__yqPDZ-u9thqTn8uQrNmPwa7b5qA9tKo36ylgQGWUk';
 const RECIBIDOS_HEADERS = ['Nro.', 'RUT Emisor', 'Folio', 'Fecha Docto.', 'Monto Neto', 'Monto Exento', 'Monto IVA', 'Monto Total', 'Fecha Recep.', 'Evento Receptor', 'Mapped', 'Tipo DTE'];
+const RECIBIDOS_FOLIO = 2;
+const RECIBIDOS_INFO_RANGE = 'Facturas Rec.!B3:N';
+const RECIBIDOS_INSERT_RANGE = 'Facturas Rec.!B4:N4';
+const EMITIDOS_HEADERS = ['Nro.', 'RUT Receptor', 'Empresa', 'Folio', 'Total Reparos', 'Monto Neto', 'Monto Exento', 'Monto IVA', 'Monto Total', 'Fecha Recep.', 'Evento Receptor', 'Mapped'];
+const EMITIDOS_FOLIO = 3;
+const EMITIDOS_INFO_RANGE = 'Facturas Emi.!B3:Z';
+const EMITIDOS_INSERT_RANGE = 'Facturas Emi.!B4:Z4';
+
 const connect = async () => {
   const content = JSON.parse(fs.readFileSync('credentials.json'));
   const client = await authorize(content);
@@ -92,31 +100,40 @@ const saveToken = (token) => {
 
 const addFacturas = async (facturas) => {
   const auth = await connect();
-  await addFacturasRecibidas(facturas.recieved, auth);
+  const sheets = google.sheets({ version: 'v4', auth });
+  await addFacturasRecibidas(facturas.recieved, sheets);
+  await addFacturasEmitidas(facturas.sent, sheets);
 };
 
 
-const addFacturasRecibidas = async (facturas, auth) => {
-  const sheets = google.sheets({ version: 'v4', auth });
-  const registered = await getFacturasRecibidas(sheets);
-  const toAdd = getNewFacturas(facturas, registered);
-  await insertFacturasRecibidas(toAdd, sheets);
+const addFacturasRecibidas = async (facturas, sheets) => {
+  const registered = await getFacturas(sheets, RECIBIDOS_INFO_RANGE, RECIBIDOS_HEADERS);
+  const toAdd = getNewFacturas(facturas, registered, RECIBIDOS_FOLIO);
+  await insertFacturas(toAdd, sheets, RECIBIDOS_INSERT_RANGE);
   console.log('Facturas Recibidas Agregadas', toAdd.length);
   console.log(toAdd);
 };
 
-const getFacturasRecibidas = (sheets) => {
+const addFacturasEmitidas = async (facturas, sheets) => {
+  const registered = await getFacturas(sheets, EMITIDOS_INFO_RANGE, EMITIDOS_HEADERS);
+  const toAdd = getNewFacturas(facturas, registered, EMITIDOS_FOLIO);
+  await insertFacturas(toAdd, sheets, EMITIDOS_INSERT_RANGE);
+  console.log('Facturas Emitidas Agregadas', toAdd.length);
+  console.log(toAdd);
+};
+
+const getFacturas = (sheets, range, headers) => {
   return new Promise((resolve, reject) => {
     sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: 'Facturas Rec.!B3:N',
+      range,
     }, (err, res) => {
       if (err) return reject(err);
       const rows = res.data.values;
       const facturas = [];
       for (let i = 0; i < rows.length; i++) {
         const element = rows[i];
-        const factura = parseFactura(element, RECIBIDOS_HEADERS);
+        const factura = parseFactura(element, headers);
         if (factura) facturas.push(factura);
       }
       return resolve(facturas);
@@ -134,12 +151,12 @@ const parseFactura = (element, headers) => {
   return factura;
 };
 
-const getNewFacturas = (facturas, registered) => {
-  const hashTable = toHashTable(registered);
+const getNewFacturas = (facturas, registered, folio) => {
+  const hashTable = toHashTable(registered, folio);
   const toAdd = [];
   for (let i = 0; i < facturas.length; i++) {
     const element = facturas[i];
-    const key = hash(element);
+    const key = hash(element, folio);
     if (!hashTable[key]) {
       toAdd.push(element);
       registered.push(element);
@@ -148,25 +165,25 @@ const getNewFacturas = (facturas, registered) => {
   return toAdd;
 };
 
-const toHashTable = (registered) => {
+const toHashTable = (registered, folio) => {
   const table = {};
   for (let i = 0; i < registered.length; i++) {
     const element = registered[i];
-    const key = hash(Object.values(element));
+    const key = hash(Object.values(element), folio);
     table[key] = element;
   }
   return table;
 };
 
-const hash = (element) => {
-  return `${element[1]}_${element[2]}`;
+const hash = (element, folio) => {
+  return `${element[1]}_${element[folio]}`;
 };
 
-const insertFacturasRecibidas = (array, sheets) => {
+const insertFacturas = (array, sheets, range) => {
   return new Promise((resolve, reject) => {
     sheets.spreadsheets.values.append({
       spreadsheetId: SPREADSHEET_ID,
-      range: 'Facturas Rec.!B4:N4',
+      range,
       valueInputOption: 'RAW',
       resource: { values: array },
     }, (err, res) => {
