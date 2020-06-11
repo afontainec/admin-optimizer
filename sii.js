@@ -9,9 +9,8 @@ const EMITIDOS_LENGTH = 11;
 
 const readFacturas = async () => {
   const files = await todayFiles(DOWNLOADS_PATH);
-  console.log(Object.keys(files));
   const data = await parseFiles(files);
-  console.log(data);
+  return data;
 };
 
 
