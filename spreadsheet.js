@@ -69,7 +69,7 @@ const fetchToken = (code, oAuth2Client) => {
         console.error('Error while trying to retrieve access token', err);
         return reject(err);
       }
-      resolve(token);
+      return resolve(token);
     });
   });
 };
@@ -82,7 +82,7 @@ const saveToken = (token) => {
         return reject(err);
       }
       console.log('Token stored to', TOKEN_PATH);
-      resolve();
+      return resolve();
     });
   });
 };

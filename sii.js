@@ -1,5 +1,6 @@
 const path = require('path');
 const fs = require('fs');
+const RUTS = require('./ruts');
 
 const ONE_DAY = 24 * 60 * 60 * 1000;
 const THRESHOLD = new Date().getTime() - ONE_DAY;
@@ -79,7 +80,6 @@ const parsedFacturas = (file, n) => {
     const elements = line.split(';');
     if (elements[0]) {
       const factura = extractFactura(elements, n);
-
       parsed.push(factura);
     }
   }
@@ -93,6 +93,8 @@ const extractFactura = (elements, n) => {
     if (isDate(element)) factura.push(parseToDate(element));
     else factura.push(element);
   }
+  if (RUTS[factura[1]]) factura.push(RUTS[factura[1]]);
+  else console.log(`NO SE ENCONTRÓ RAZON SOCIAL PARA ${factura[1]}`);
   return factura;
 };
 
