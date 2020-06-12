@@ -114,13 +114,14 @@ const addFacturas = async (facturas) => {
 
 
 const addFacturasRecibidas = async (facturas, sheets, cartola) => {
+  console.log('-------- FACTURAS RECIBIDAS');
   const registered = await readRange(sheets, RECIBIDOS_INFO_RANGE, RECIBIDOS_HEADERS);
   const toAdd = getNewFacturas(facturas, registered, RECIBIDOS_FOLIO);
   const mapped = await mapToAdd(toAdd, cartola, 'Egreso', RECIBIDOS_AMOUNT_INDEX);
   await updateMapped(sheets, mapped, RECIBIDOS_FOLIO, 'Egreso', RECIBIDOS_AMOUNT_INDEX);
   await insertFacturas(toAdd, sheets, RECIBIDOS_INSERT_RANGE);
   console.log('Facturas Recibidas Agregadas', toAdd.length);
-  console.log(toAdd);
+  for (let i = 0; i < toAdd.length; i++) { console.log(toAdd[i].join(' ')); }
   return toAdd;
 };
 
@@ -260,7 +261,7 @@ const notMapped = (entry) => {
 
 const selectOption = (element, options) => {
   return new Promise((resolve) => {
-    console.log('La factura:', element.join(' '));
+    console.log('La factura: \n', element.join(' '));
     console.log('Se mapea de mejor manera a que entrada:');
     for (let i = 0; i < options.length; i++) {
       const o = options[i];
@@ -268,6 +269,7 @@ const selectOption = (element, options) => {
     }
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
     rl.question('Indicar el indice (poner 0 si ninguno aplica):', (result) => {
+      console.log('Entendido! \n');
       rl.close();
       resolve(options[result - 1]);
     });
