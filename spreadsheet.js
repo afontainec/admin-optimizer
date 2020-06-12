@@ -211,13 +211,10 @@ const insertFacturas = (array, sheets, range) => {
 // #endregion
 
 const mapToAdd = async (toAdd, cartola, cartolaIndex, elementIndex) => {
-  console.log(cartola[0]);
   for (let i = 0; i < toAdd.length; i++) {
     const element = toAdd[i];
     const options = getBestOptions(element, cartola, cartolaIndex, elementIndex);
-    console.log('-------------------');
-    console.log('for', element);
-    console.log(options);
+    const best = await selectOption(options);
     // ask: La mejor combina que hemos pillado es la siguiente: mappear?
     // if (ask) element.push(1);
     // mapped = debug.push(best);
@@ -228,23 +225,23 @@ const getBestOptions = (element, cartola, cartolaIndex, elementIndex) => {
   const options = [];
   for (let i = 0; i < cartola.length; i++) {
     const entry = cartola[i];
-    console.log(entry, cartolaIndex, entry[cartolaIndex]);
     if (notMapped(entry)) {
       const entryAmount = parseAmount(entry[cartolaIndex]);
       const elementAmount = parseAmount(element[elementIndex]);
       const diff = getPorcentageDifference(entryAmount, elementAmount);
-      if (diff < 5) options.push(entry);
+      console.log(entry['ítem'], entryAmount, elementAmount, diff);
+      if (diff < 15) options.push(entry);
     }
   }
   return options;
 };
 
 const parseAmount = (input) => {
+  // if (input.startsWith('(')) input = `-${input}`;
+  input = input.replace(/\(/g, '');
+  input = input.replace(/\)/g, '');
+  input = input.replace(/,/g, '');
   console.log(input);
-  if (input.startsWith('(')) input = `-${input}`;
-  input.replace(/\(/g, '');
-  input.replace(/\)/g, '');
-  input.replace(/,/g, '');
   return Number.parseInt(input, 10);
 };
 
