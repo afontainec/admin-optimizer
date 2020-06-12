@@ -10,10 +10,15 @@ const RECIBIDOS_HEADERS = ['Nro.', 'RUT Emisor', 'Folio', 'Fecha Docto.', 'Monto
 const RECIBIDOS_FOLIO = 2;
 const RECIBIDOS_INFO_RANGE = 'Facturas Rec.!B3:N';
 const RECIBIDOS_INSERT_RANGE = 'Facturas Rec.!B4:N4';
+
 const EMITIDOS_HEADERS = ['Nro.', 'RUT Receptor', 'Empresa', 'Folio', 'Total Reparos', 'Monto Neto', 'Monto Exento', 'Monto IVA', 'Monto Total', 'Fecha Recep.', 'Evento Receptor', 'Mapped'];
 const EMITIDOS_FOLIO = 3;
 const EMITIDOS_INFO_RANGE = 'Facturas Emi.!B3:Z';
 const EMITIDOS_INSERT_RANGE = 'Facturas Emi.!B4:Z4';
+
+const DEBUG_RANGE = 'Debug!B4:X';
+const DEBUG_HEADERS = ['Categoría', 'ítem', 'Descripción', 'Fecha de Pago', 'Mes Devengado', 'Ingreso', 'Egreso', 'Saldo Actual', 'Saldo Teórico', 'Pagado', 'Prioridad', 'ATP', 'Número de Factura', 'Rut del Emisor', 'Razón Social', 'Folio Dte', 'Fecha Emisión', 'Fecha Recepción'];
+
 
 const connect = async () => {
   const content = JSON.parse(fs.readFileSync('credentials.json'));
@@ -101,14 +106,14 @@ const saveToken = (token) => {
 const addFacturas = async (facturas) => {
   const auth = await connect();
   const sheets = google.sheets({ version: 'v4', auth });
-  // const cartola =  getDebugEntries();
+  const cartola = await readRange(sheets, DEBUG_RANGE, DEBUG_HEADERS);
   await addFacturasRecibidas(facturas.recieved, sheets);
   await addFacturasEmitidas(facturas.sent, sheets);
 };
 
 
 const addFacturasRecibidas = async (facturas, sheets) => {
-  const registered = await getFacturas(sheets, RECIBIDOS_INFO_RANGE, RECIBIDOS_HEADERS);
+  const registered = await readRange(sheets, RECIBIDOS_INFO_RANGE, RECIBIDOS_HEADERS);
   const toAdd = getNewFacturas(facturas, registered, RECIBIDOS_FOLIO);
   // mapToAdd(toAdd, debug);
   await insertFacturas(toAdd, sheets, RECIBIDOS_INSERT_RANGE);
@@ -118,7 +123,7 @@ const addFacturasRecibidas = async (facturas, sheets) => {
 };
 
 const addFacturasEmitidas = async (facturas, sheets) => {
-  const registered = await getFacturas(sheets, EMITIDOS_INFO_RANGE, EMITIDOS_HEADERS);
+  const registered = await readRange(sheets, EMITIDOS_INFO_RANGE, EMITIDOS_HEADERS);
   const toAdd = getNewFacturas(facturas, registered, EMITIDOS_FOLIO);
   await insertFacturas(toAdd, sheets, EMITIDOS_INSERT_RANGE);
   console.log('Facturas Emitidas Agregadas', toAdd.length);
@@ -126,9 +131,8 @@ const addFacturasEmitidas = async (facturas, sheets) => {
   return toAdd;
 };
 
-// #region Facturas
 
-const getFacturas = (sheets, range, headers) => {
+const readRange = (sheets, range, headers) => {
   return new Promise((resolve, reject) => {
     sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
@@ -136,26 +140,28 @@ const getFacturas = (sheets, range, headers) => {
     }, (err, res) => {
       if (err) return reject(err);
       const rows = res.data.values;
-      const facturas = [];
+      const data = [];
       for (let i = 0; i < rows.length; i++) {
-        const element = rows[i];
-        const factura = parseFactura(element, headers);
-        if (factura) facturas.push(factura);
+        const row = rows[i];
+        const element = parseElement(row, headers);
+        if (element) data.push(element);
       }
-      return resolve(facturas);
+      return resolve(data);
     });
   });
 };
 
-const parseFactura = (element, headers) => {
-  const factura = {};
-  if (!element || !element[0]) return null;
+const parseElement = (input, headers) => {
+  const element = {};
+  if (!input || !input[0]) return null;
   for (let i = 0; i < headers.length; i++) {
     const header = headers[i];
-    factura[header] = element[i];
+    element[header] = input[i];
   }
-  return factura;
+  return element;
 };
+
+// #region Facturas
 
 const getNewFacturas = (facturas, registered, folio) => {
   const hashTable = toHashTable(registered, folio);
