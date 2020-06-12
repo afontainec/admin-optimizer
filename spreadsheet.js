@@ -230,6 +230,7 @@ const getBestOptions = (element, cartola, cartolaIndex, elementIndex) => {
   for (let i = 0; i < cartola.length; i++) {
     const entry = cartola[i];
     if (notMapped(entry)) {
+      entry.index = 1;
       const entryAmount = parseAmount(entry[cartolaIndex]);
       const elementAmount = parseAmount(element[elementIndex]);
       const diff = getPorcentageDifference(entryAmount, elementAmount);
