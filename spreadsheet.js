@@ -117,7 +117,7 @@ const addFacturasRecibidas = async (facturas, sheets, cartola) => {
   const registered = await readRange(sheets, RECIBIDOS_INFO_RANGE, RECIBIDOS_HEADERS);
   const toAdd = getNewFacturas(facturas, registered, RECIBIDOS_FOLIO);
   const mapped = await mapToAdd(toAdd, cartola, 'Egreso', RECIBIDOS_AMOUNT_INDEX);
-  await updateMapped(sheets, mapped, RECIBIDOS_FOLIO, 'Egreso');
+  await updateMapped(sheets, mapped, RECIBIDOS_FOLIO, 'Egreso', RECIBIDOS_AMOUNT_INDEX);
   await insertFacturas(toAdd, sheets, RECIBIDOS_INSERT_RANGE);
   console.log('Facturas Recibidas Agregadas', toAdd.length);
   console.log(toAdd);
@@ -277,17 +277,16 @@ const selectOption = (element, options) => {
 // #endregion
 
 
-const updateMapped = async (sheets, mapped, folio) => {
+const updateMapped = async (sheets, mapped, folio, amountKey, amountIndex) => {
   for (let i = 0; i < mapped.length; i++) {
     const entry = mapped[i];
     const row = entry.index + 4;
-    console.log('vamos a editar row', row);
     // eslint-disable-next-line no-await-in-loop
-    await updateEntry(row, entry.mappedTo, sheets, folio);
+    await updateEntry(row, entry.mappedTo, sheets, folio, amountKey, amountIndex);
   }
 };
 
-const updateEntry = (row, factura, sheets, folio) => {
+const updateEntry = (row, factura, sheets, folio, amountKey, amountIndex) => {
   const promises = [];
   let column = alphabet[DEBUG_HEADERS.indexOf('Número de Factura') + 1];
   promises.push(updateCell(sheets, `Debug!${column}${row}`, factura[folio]));
@@ -295,12 +294,20 @@ const updateEntry = (row, factura, sheets, folio) => {
   promises.push(updateCell(sheets, `Debug!${column}${row}`, factura[1]));
   column = alphabet[DEBUG_HEADERS.indexOf('Prioridad') + 1];
   promises.push(updateCell(sheets, `Debug!${column}${row}`, 5));
+  column = alphabet[DEBUG_HEADERS.indexOf(amountKey) + 1];
+  const amount = parseAmountToInteger(factura[amountIndex], amountKey);
+  promises.push(updateCell(sheets, `Debug!${column}${row}`, amount));
   return Promise.all(promises);
+};
+
+const parseAmountToInteger = (input, key) => {
+  let result = Number.parseInt(input, 10);
+  if (key === 'Egreso') result *= -1;
+  return result;
 };
 
 
 const updateCell = (sheets, range, value) => {
-  console.log('vamos a agregar', value, 'en', range);
   return new Promise((resolve, reject) => {
     sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
