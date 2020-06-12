@@ -211,16 +211,20 @@ const insertFacturas = (array, sheets, range) => {
 // #endregion
 
 const mapToAdd = async (toAdd, cartola, cartolaIndex, elementIndex) => {
+  const mapped = [];
   for (let i = 0; i < toAdd.length; i++) {
     const element = toAdd[i];
     const options = getBestOptions(element, cartola, cartolaIndex, elementIndex);
-    const best = await selectOption(options);
-    // ask: La mejor combina que hemos pillado es la siguiente: mappear?
-    // if (ask) element.push(1);
-    // mapped = debug.push(best);
+    // eslint-disable-next-line no-await-in-loop
+    const best = await selectOption(element, options);
+    console.log(best);
+    if (best) element.push(1);
+    mapped.push(best);
   }
+  return mapped;
 };
 
+// #region  getBestOptions
 const getBestOptions = (element, cartola, cartolaIndex, elementIndex) => {
   const options = [];
   for (let i = 0; i < cartola.length; i++) {
@@ -251,8 +255,27 @@ const getPorcentageDifference = (a, b) => {
 
 const notMapped = (entry) => {
   return entry.Pagado !== '1' && !entry['Número de Factura'];
-
 };
+
+// #endregion
+
+
+const selectOption = (element, options) => {
+  return new Promise((resolve) => {
+    console.log('La factura:', element.join(' '));
+    console.log('Se mapea de mejor manera a que entrada:');
+    for (let i = 0; i < options.length; i++) {
+      const o = options[i];
+      console.log(`${i + 1})`, o['Categoría'], o['ítem'], o['Descripción'], o['Fecha de Pago'], o.Ingreso || o.Egreso);
+    }
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    rl.question('Indicar el indice (poner 0 si ninguno aplica):', (result) => {
+      rl.close();
+      resolve(options[result - 1]);
+    });
+  });
+};
+
 
 module.exports = {
   connect,
