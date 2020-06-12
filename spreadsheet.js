@@ -19,9 +19,6 @@ const EMITIDOS_INSERT_RANGE = 'Facturas Emi.!B4:Z4';
 
 const DEBUG_RANGE = 'Debug!B4:X';
 const DEBUG_HEADERS = ['Categoría', 'ítem', 'Descripción', 'Fecha de Pago', 'Mes Devengado', 'Ingreso', 'Egreso', 'Saldo Actual', 'Saldo Teórico', 'Pagado', 'Prioridad', 'ATP', 'Número de Factura', 'Rut del Emisor', 'Razón Social', 'Folio Dte', 'Fecha Emisión', 'Fecha Recepción'];
-const DEBUG_EGRESO_INDEX = DEBUG_HEADERS.indexOf('Egreso');
-const DEBUG_PAID_INDEX = DEBUG_HEADERS.indexOf('Pagado');
-const DEBUG_FOLIO_INDEX = DEBUG_HEADERS.indexOf('Número de Factura');
 
 const connect = async () => {
   const content = JSON.parse(fs.readFileSync('credentials.json'));
@@ -118,7 +115,8 @@ const addFacturas = async (facturas) => {
 const addFacturasRecibidas = async (facturas, sheets, cartola) => {
   const registered = await readRange(sheets, RECIBIDOS_INFO_RANGE, RECIBIDOS_HEADERS);
   const toAdd = getNewFacturas(facturas, registered, RECIBIDOS_FOLIO);
-  await mapToAdd(toAdd, cartola, 'Egreso', RECIBIDOS_AMOUNT_INDEX);
+  const mapped = await mapToAdd(toAdd, cartola, 'Egreso', RECIBIDOS_AMOUNT_INDEX);
+  await updateMapped(sheets, mapped);
   await insertFacturas(toAdd, sheets, RECIBIDOS_INSERT_RANGE);
   console.log('Facturas Recibidas Agregadas', toAdd.length);
   console.log(toAdd);
@@ -217,7 +215,6 @@ const mapToAdd = async (toAdd, cartola, cartolaIndex, elementIndex) => {
     const options = getBestOptions(element, cartola, cartolaIndex, elementIndex);
     // eslint-disable-next-line no-await-in-loop
     const best = await selectOption(element, options);
-    console.log(best);
     if (best) element.push(1);
     mapped.push(best);
   }
@@ -230,11 +227,10 @@ const getBestOptions = (element, cartola, cartolaIndex, elementIndex) => {
   for (let i = 0; i < cartola.length; i++) {
     const entry = cartola[i];
     if (notMapped(entry)) {
-      entry.index = 1;
+      entry.index = i;
       const entryAmount = parseAmount(entry[cartolaIndex]);
       const elementAmount = parseAmount(element[elementIndex]);
       const diff = getPorcentageDifference(entryAmount, elementAmount);
-      console.log(entry['ítem'], entryAmount, elementAmount, diff);
       if (diff < 15) options.push(entry);
     }
   }
@@ -246,7 +242,6 @@ const parseAmount = (input) => {
   input = input.replace(/\(/g, '');
   input = input.replace(/\)/g, '');
   input = input.replace(/,/g, '');
-  console.log(input);
   return Number.parseInt(input, 10);
 };
 
@@ -273,6 +268,29 @@ const selectOption = (element, options) => {
     rl.question('Indicar el indice (poner 0 si ninguno aplica):', (result) => {
       rl.close();
       resolve(options[result - 1]);
+    });
+  });
+};
+
+const updateMapped = async (sheets, mapped) => {
+  for (let i = 0; i < mapped.length; i++) {
+    const entry = mapped[i];
+    const row = entry.index + 4;
+    // eslint-disable-next-line no-await-in-loop
+    await updateCell(sheets, `Debug!N${row}`, 'POR API');
+  }
+};
+
+const updateCell = (sheets, range, value) => {
+  return new Promise((resolve, reject) => {
+    sheets.spreadsheets.values.update({
+      spreadsheetId: SPREADSHEET_ID,
+      range,
+      valueInputOption: 'RAW',
+      resource: { values: [[value]] },
+    }, (err, res) => {
+      if (err) return reject(err);
+      return resolve(res);
     });
   });
 };
