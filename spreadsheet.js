@@ -16,6 +16,8 @@ const EMITIDOS_HEADERS = ['Nro.', 'RUT Receptor', 'Empresa', 'Folio', 'Total Rep
 const EMITIDOS_FOLIO = 3;
 const EMITIDOS_INFO_RANGE = 'Facturas Emi.!B3:Z';
 const EMITIDOS_INSERT_RANGE = 'Facturas Emi.!B4:Z4';
+const EMITIDOS_AMOUNT_INDEX = 9;
+
 
 const DEBUG_RANGE = 'Debug!B4:X';
 const DEBUG_HEADERS = ['Categoría', 'ítem', 'Descripción', 'Fecha de Pago', 'Mes Devengado', 'Ingreso', 'Egreso', 'Saldo Actual', 'Saldo Teórico', 'Pagado', 'Prioridad', 'ATP', 'Número de Factura', 'Rut del Emisor', 'Razón Social', 'Folio Dte', 'Fecha Emisión', 'Fecha Recepción'];
@@ -125,12 +127,15 @@ const addFacturasRecibidas = async (facturas, sheets, cartola) => {
   return toAdd;
 };
 
-const addFacturasEmitidas = async (facturas, sheets) => {
+const addFacturasEmitidas = async (facturas, sheets, cartola) => {
+  console.log('-------- FACTURAS EMITIDAS');
   const registered = await readRange(sheets, EMITIDOS_INFO_RANGE, EMITIDOS_HEADERS);
   const toAdd = getNewFacturas(facturas, registered, EMITIDOS_FOLIO);
+  const mapped = await mapToAdd(toAdd, cartola, 'Ingreso', EMITIDOS_AMOUNT_INDEX);
+  await updateMapped(sheets, mapped, EMITIDOS_FOLIO, 'Ingreso', EMITIDOS_AMOUNT_INDEX);
   await insertFacturas(toAdd, sheets, EMITIDOS_INSERT_RANGE);
   console.log('Facturas Emitidas Agregadas', toAdd.length);
-  console.log(toAdd);
+  for (let i = 0; i < toAdd.length; i++) { console.log(toAdd[i].join(' ')); }
   return toAdd;
 };
 
@@ -229,6 +234,7 @@ const mapToAdd = async (toAdd, cartola, cartolaIndex, elementIndex) => {
 // #region  getBestOptions
 const getBestOptions = (element, cartola, cartolaIndex, elementIndex) => {
   const options = [];
+  console.log(element, elementIndex);
   for (let i = 0; i < cartola.length; i++) {
     const entry = cartola[i];
     if (notMapped(entry)) {
@@ -236,6 +242,7 @@ const getBestOptions = (element, cartola, cartolaIndex, elementIndex) => {
       const entryAmount = parseAmount(entry[cartolaIndex]);
       const elementAmount = parseAmount(element[elementIndex]);
       const diff = getPorcentageDifference(entryAmount, elementAmount);
+      console.log(entryAmount, elementAmount, diff, entry['ítem']);
       if (diff < 15) options.push(entry);
     }
   }
