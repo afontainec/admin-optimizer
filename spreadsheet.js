@@ -10,6 +10,7 @@ const RECIBIDOS_HEADERS = ['Nro.', 'RUT Emisor', 'Folio', 'Fecha Docto.', 'Monto
 const RECIBIDOS_FOLIO = 2;
 const RECIBIDOS_INFO_RANGE = 'Facturas Rec.!B3:N';
 const RECIBIDOS_INSERT_RANGE = 'Facturas Rec.!B4:N4';
+const RECIBIDOS_AMOUNT_INDEX = RECIBIDOS_HEADERS.indexOf('Monto Total');
 
 const EMITIDOS_HEADERS = ['Nro.', 'RUT Receptor', 'Empresa', 'Folio', 'Total Reparos', 'Monto Neto', 'Monto Exento', 'Monto IVA', 'Monto Total', 'Fecha Recep.', 'Evento Receptor', 'Mapped'];
 const EMITIDOS_FOLIO = 3;
@@ -18,7 +19,9 @@ const EMITIDOS_INSERT_RANGE = 'Facturas Emi.!B4:Z4';
 
 const DEBUG_RANGE = 'Debug!B4:X';
 const DEBUG_HEADERS = ['Categoría', 'ítem', 'Descripción', 'Fecha de Pago', 'Mes Devengado', 'Ingreso', 'Egreso', 'Saldo Actual', 'Saldo Teórico', 'Pagado', 'Prioridad', 'ATP', 'Número de Factura', 'Rut del Emisor', 'Razón Social', 'Folio Dte', 'Fecha Emisión', 'Fecha Recepción'];
-
+const DEBUG_EGRESO_INDEX = DEBUG_HEADERS.indexOf('Egreso');
+const DEBUG_PAID_INDEX = DEBUG_HEADERS.indexOf('Pagado');
+const DEBUG_FOLIO_INDEX = DEBUG_HEADERS.indexOf('Número de Factura');
 
 const connect = async () => {
   const content = JSON.parse(fs.readFileSync('credentials.json'));
@@ -107,15 +110,15 @@ const addFacturas = async (facturas) => {
   const auth = await connect();
   const sheets = google.sheets({ version: 'v4', auth });
   const cartola = await readRange(sheets, DEBUG_RANGE, DEBUG_HEADERS);
-  await addFacturasRecibidas(facturas.recieved, sheets);
-  await addFacturasEmitidas(facturas.sent, sheets);
+  await addFacturasRecibidas(facturas.recieved, sheets, cartola);
+  await addFacturasEmitidas(facturas.sent, sheets, cartola);
 };
 
 
-const addFacturasRecibidas = async (facturas, sheets) => {
+const addFacturasRecibidas = async (facturas, sheets, cartola) => {
   const registered = await readRange(sheets, RECIBIDOS_INFO_RANGE, RECIBIDOS_HEADERS);
   const toAdd = getNewFacturas(facturas, registered, RECIBIDOS_FOLIO);
-  // mapToAdd(toAdd, debug);
+  await mapToAdd(toAdd, cartola, 'Egreso', RECIBIDOS_AMOUNT_INDEX);
   await insertFacturas(toAdd, sheets, RECIBIDOS_INSERT_RANGE);
   console.log('Facturas Recibidas Agregadas', toAdd.length);
   console.log(toAdd);
@@ -207,15 +210,52 @@ const insertFacturas = (array, sheets, range) => {
 
 // #endregion
 
-// const mapToAdd = (toAdd, debug) => {
-// for (let i = 0; i < toAdd.length; i++) {
-// const element = toAdd[i];
-// const best = getBestOption(toAdd, debug);
-// ask: La mejor combina que hemos pillado es la siguiente: mappear?
-// if(ask) element.push(1);
-// mapped = debug.push(best);
-// }
-// }
+const mapToAdd = async (toAdd, cartola, cartolaIndex, elementIndex) => {
+  console.log(cartola[0]);
+  for (let i = 0; i < toAdd.length; i++) {
+    const element = toAdd[i];
+    const options = getBestOptions(element, cartola, cartolaIndex, elementIndex);
+    console.log('-------------------');
+    console.log('for', element);
+    console.log(options);
+    // ask: La mejor combina que hemos pillado es la siguiente: mappear?
+    // if (ask) element.push(1);
+    // mapped = debug.push(best);
+  }
+};
+
+const getBestOptions = (element, cartola, cartolaIndex, elementIndex) => {
+  const options = [];
+  for (let i = 0; i < cartola.length; i++) {
+    const entry = cartola[i];
+    console.log(entry, cartolaIndex, entry[cartolaIndex]);
+    if (notMapped(entry)) {
+      const entryAmount = parseAmount(entry[cartolaIndex]);
+      const elementAmount = parseAmount(element[elementIndex]);
+      const diff = getPorcentageDifference(entryAmount, elementAmount);
+      if (diff < 5) options.push(entry);
+    }
+  }
+  return options;
+};
+
+const parseAmount = (input) => {
+  console.log(input);
+  if (input.startsWith('(')) input = `-${input}`;
+  input.replace(/\(/g, '');
+  input.replace(/\)/g, '');
+  input.replace(/,/g, '');
+  return Number.parseInt(input, 10);
+};
+
+const getPorcentageDifference = (a, b) => {
+  return Math.abs(Math.round((a - b) / b * 100));
+};
+
+const notMapped = (entry) => {
+  return entry.Pagado !== '1' && !entry['Número de Factura'];
+
+};
 
 module.exports = {
   connect,
