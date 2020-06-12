@@ -19,6 +19,7 @@ const EMITIDOS_INSERT_RANGE = 'Facturas Emi.!B4:Z4';
 
 const DEBUG_RANGE = 'Debug!B4:X';
 const DEBUG_HEADERS = ['Categoría', 'ítem', 'Descripción', 'Fecha de Pago', 'Mes Devengado', 'Ingreso', 'Egreso', 'Saldo Actual', 'Saldo Teórico', 'Pagado', 'Prioridad', 'ATP', 'Número de Factura', 'Rut del Emisor', 'Razón Social', 'Folio Dte', 'Fecha Emisión', 'Fecha Recepción'];
+const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
 const connect = async () => {
   const content = JSON.parse(fs.readFileSync('credentials.json'));
@@ -116,7 +117,7 @@ const addFacturasRecibidas = async (facturas, sheets, cartola) => {
   const registered = await readRange(sheets, RECIBIDOS_INFO_RANGE, RECIBIDOS_HEADERS);
   const toAdd = getNewFacturas(facturas, registered, RECIBIDOS_FOLIO);
   const mapped = await mapToAdd(toAdd, cartola, 'Egreso', RECIBIDOS_AMOUNT_INDEX);
-  await updateMapped(sheets, mapped);
+  await updateMapped(sheets, mapped, RECIBIDOS_FOLIO, 'Egreso');
   await insertFacturas(toAdd, sheets, RECIBIDOS_INSERT_RANGE);
   console.log('Facturas Recibidas Agregadas', toAdd.length);
   console.log(toAdd);
@@ -215,8 +216,11 @@ const mapToAdd = async (toAdd, cartola, cartolaIndex, elementIndex) => {
     const options = getBestOptions(element, cartola, cartolaIndex, elementIndex);
     // eslint-disable-next-line no-await-in-loop
     const best = await selectOption(element, options);
-    if (best) element.push(1);
-    mapped.push(best);
+    if (best) {
+      element.push(1);
+      best.mappedTo = element;
+      mapped.push(best);
+    }
   }
   return mapped;
 };
@@ -253,8 +257,6 @@ const notMapped = (entry) => {
   return entry.Pagado !== '1' && !entry['Número de Factura'];
 };
 
-// #endregion
-
 
 const selectOption = (element, options) => {
   return new Promise((resolve) => {
@@ -272,16 +274,33 @@ const selectOption = (element, options) => {
   });
 };
 
-const updateMapped = async (sheets, mapped) => {
+// #endregion
+
+
+const updateMapped = async (sheets, mapped, folio) => {
   for (let i = 0; i < mapped.length; i++) {
     const entry = mapped[i];
     const row = entry.index + 4;
+    console.log('vamos a editar row', row);
     // eslint-disable-next-line no-await-in-loop
-    await updateCell(sheets, `Debug!N${row}`, 'POR API');
+    await updateEntry(row, entry.mappedTo, sheets, folio);
   }
 };
 
+const updateEntry = (row, factura, sheets, folio) => {
+  const promises = [];
+  let column = alphabet[DEBUG_HEADERS.indexOf('Número de Factura') + 1];
+  promises.push(updateCell(sheets, `Debug!${column}${row}`, factura[folio]));
+  column = alphabet[DEBUG_HEADERS.indexOf('Rut del Emisor') + 1];
+  promises.push(updateCell(sheets, `Debug!${column}${row}`, factura[1]));
+  column = alphabet[DEBUG_HEADERS.indexOf('Prioridad') + 1];
+  promises.push(updateCell(sheets, `Debug!${column}${row}`, 5));
+  return Promise.all(promises);
+};
+
+
 const updateCell = (sheets, range, value) => {
+  console.log('vamos a agregar', value, 'en', range);
   return new Promise((resolve, reject) => {
     sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
