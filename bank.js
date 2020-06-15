@@ -1,4 +1,4 @@
-
+/* eslint-disable no-await-in-loop */
 const path = require('path');
 const readline = require('readline');
 const fs = require('fs');
@@ -56,8 +56,9 @@ const mapMovements = async (movements) => {
   const bankCartola = await getBankCartola(sheets);
   const newMovements = getNewMovements(movements, bankCartola);
   const mapped = await mapNewMovements(newMovements, sheets);
-  await updateMapped(sheets, mapped);
-  await insertMovements(newMovements, sheets, INSERT_RANGE);
+  // await updateMapped(sheets, mapped);
+  // await insertMovements(newMovements, sheets, INSERT_RANGE);
+  await addManually(newMovements);
   printResults(newMovements);
 };
 
@@ -216,18 +217,70 @@ const parseForInsert = (movements) => {
   return parsed;
 };
 
+
+const addManually = async (movements) => {
+  const missing = movements.map((element) => { return element.Mapped ? null : element; });
+
+  for (let i = 0; i < missing.length; i++) {
+    const element = missing[i];
+    if (element) {
+      const shouldAdd = await shouldManuallyAdd(element);
+      if (shouldAdd) await manuallyAdd(element);
+    }
+  }
+};
+
+const shouldManuallyAdd = async (element) => {
+  console.log('Desea agregar manualmente:');
+  console.log('', Object.values(element).join(' '));
+  const result = await ask('Ingrese s/n');
+  return result.toLowerCase() === 's';
+};
+
+const ask = (question, options) => {
+  return new Promise((resolve) => {
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    let fullQuestion = question;
+    if (options) fullQuestion += ` (Posibles opciones: ${options.join(', ')})`;
+    rl.question(`${fullQuestion}\n`, (result) => {
+      rl.close();
+      if (options && options.indexOf(result) === -1) {
+        console.log(result, 'no encontrado, intentar nuevamente');
+        return resolve(ask(question, options));
+      }
+      return resolve(result);
+    });
+  });
+};
+
+const manuallyAdd = async (element) => {
+  console.log('manualy add!', element);
+  // const isIngreso = !!element.Abono;
+  // const values = {};
+  // values.categoria = await Formulario.askCategory(isIngreso);
+  // values.item = await ask('Item:');
+  // values.description = await ask('Descripción:');
+  // values.fechaEmision = element.Fecha;
+  // values.monto = element.Abono || element.Cargo;
+  // values.mesDevengado = toMonth(element.Fecha);
+  // values.fechaPago = element.fechaEmision;
+  // values.atp = await ask('ATP:', ['Si', 'No']);
+  // await Formulario.prefill(values, isIngreso);
+  // await ask('Datos rellenados exitosamente. Ir a formulario.');
+  // return values;
+};
+
+const toMonth = (input) => {
+  const date = new Date(input);
+  date.setDate(1);
+  return DATEVALUE(date);
+};
+
 const printResults = (movements) => {
   const mapped = movements.map((element) => { return element.Mapped ? element : null; });
-  const yetToMapped = movements.map((element) => { return element.Mapped ? null : element; });
   console.log('Movimientos agregados y mapeados: ');
   for (let i = 0; i < mapped.length; i++) {
     const element = mapped[i];
-    if (element) console.log(Object.values(element).join(' '));
-  }
-  console.log('**', 'IMPORTANTE', '**');
-  console.log('Movimientos agregados POR mapear: ');
-  for (let i = 0; i < yetToMapped.length; i++) {
-    const element = yetToMapped[i];
     if (element) console.log(Object.values(element).join(' '));
   }
 };
