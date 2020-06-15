@@ -10,8 +10,8 @@ const f = async () => {
   console.log('---------------- AGREGANDO FACTURAS');
   await factura.add(facturas);
   console.log('---------------- LEYENDO CARTOLA');
-  // const movements = await bank.readNewMovements();
-  // await bank.mapMovements(movements);
+  const movements = await bank.readNewMovements();
+  await bank.mapMovements(movements);
 };
 
 
