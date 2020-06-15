@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const sii = require('./sii');
 const spreadsheet = require('./spreadsheet');
+const Cartola = require('./cartola');
 
 const CARTOLA_PATH = path.join(__dirname, 'bank.txt');
 const HEADERS = ['Fecha', 'Oficina', 'Descripción', 'Nº Documento', 'Cargo', 'Abono', 'Saldo'];
@@ -49,7 +50,7 @@ const mapMovements = async (movements) => {
   const bankCartola = await getBankCartola(sheets);
   const newMovements = getNewMovements(movements, bankCartola);
   console.log(newMovements);
-  // const mapped = await mapNewMovements();
+  const mapped = await mapNewMovements(movements, sheets);
   // await updateMapped(mapped);
   // await insertMovements();
   // printMovementSummary();
@@ -69,6 +70,22 @@ const getBankCartola = async (sheets) => {
 };
 
 const getNewMovements = (movements, bankCartola) => {
+  const hashTable = toHashTable(bankCartola);
+  const newMovements = [];
+  for (let i = 0; i < movements.length; i++) {
+    const movement = movements[i];
+    const key = hash(Object.values(movement));
+    const bestFit = hashTable[key];
+    if (!bestFit) {
+      newMovements.push(movement);
+      bankCartola.push(movement);
+    }
+  }
+  return newMovements;
+};
+
+const mapNewMovements = async (movements, bankCartola, sheets) => {
+  const cartola = await Cartola.get(sheets);
   const hashTable = toHashTable(bankCartola);
   const newMovements = [];
   for (let i = 0; i < movements.length; i++) {

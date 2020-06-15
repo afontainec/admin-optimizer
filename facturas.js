@@ -1,6 +1,6 @@
 const readline = require('readline');
 const spreadsheet = require('./spreadsheet');
-
+const Cartola = require('./cartola');
 
 const RECIBIDOS_HEADERS = ['Nro.', 'RUT Emisor', 'Folio', 'Fecha Docto.', 'Monto Neto', 'Monto Exento', 'Monto IVA', 'Monto Total', 'Fecha Recep.', 'Evento Receptor', 'Mapped', 'Tipo DTE'];
 const RECIBIDOS_FOLIO = 2;
@@ -15,15 +15,13 @@ const EMITIDOS_INSERT_RANGE = 'Facturas Emi.!B4:Z4';
 const EMITIDOS_AMOUNT_INDEX = 9;
 
 
-const DEBUG_RANGE = 'Debug!B4:X';
-const DEBUG_HEADERS = ['Categoría', 'ítem', 'Descripción', 'Fecha de Pago', 'Mes Devengado', 'Ingreso', 'Egreso', 'Saldo Actual', 'Saldo Teórico', 'Pagado', 'Prioridad', 'ATP', 'Número de Factura', 'Rut del Emisor', 'Razón Social', 'Folio Dte', 'Fecha Emisión', 'Fecha Recepción'];
 const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
 
 // #region ADD FACTURAS
 const add = async (facturas) => {
   const sheets = await spreadsheet.connect();
-  const cartola = await spreadsheet.read(sheets, DEBUG_RANGE, DEBUG_HEADERS);
+  const cartola = Cartola.get(sheets);
   await addFacturasRecibidas(facturas.recieved, sheets, cartola);
   await addFacturasEmitidas(facturas.sent, sheets, cartola);
 };
@@ -172,13 +170,13 @@ const updateMapped = async (sheets, mapped, folio, amountKey, amountIndex) => {
 
 const updateEntry = (row, factura, sheets, folio, amountKey, amountIndex) => {
   const promises = [];
-  let column = alphabet[DEBUG_HEADERS.indexOf('Número de Factura') + 1];
+  let column = alphabet[Cartola.HEADERS.indexOf('Número de Factura') + 1];
   promises.push(spreadsheet.updateCell(sheets, `Debug!${column}${row}`, factura[folio]));
-  column = alphabet[DEBUG_HEADERS.indexOf('Rut del Emisor') + 1];
+  column = alphabet[Cartola.HEADERS.indexOf('Rut del Emisor') + 1];
   promises.push(spreadsheet.updateCell(sheets, `Debug!${column}${row}`, factura[1]));
-  column = alphabet[DEBUG_HEADERS.indexOf('Prioridad') + 1];
+  column = alphabet[Cartola.HEADERS.indexOf('Prioridad') + 1];
   promises.push(spreadsheet.updateCell(sheets, `Debug!${column}${row}`, 5));
-  column = alphabet[DEBUG_HEADERS.indexOf(amountKey) + 1];
+  column = alphabet[Cartola.HEADERS.indexOf(amountKey) + 1];
   const amount = parseAmountToInteger(factura[amountIndex], amountKey);
   promises.push(spreadsheet.updateCell(sheets, `Debug!${column}${row}`, amount));
   return Promise.all(promises);
