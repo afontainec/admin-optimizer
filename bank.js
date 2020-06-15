@@ -5,6 +5,8 @@ const fs = require('fs');
 const sii = require('./sii');
 const spreadsheet = require('./spreadsheet');
 const Cartola = require('./cartola');
+const Formulario = require('./formulario');
+const UserInterface = require('./interface');
 
 const CARTOLA_PATH = path.join(__dirname, 'bank.txt');
 const HEADERS = ['Fecha', 'Oficina', 'Descripción', 'Nº Documento', 'Cargo', 'Abono', 'Saldo'];
@@ -58,7 +60,7 @@ const mapMovements = async (movements) => {
   const mapped = await mapNewMovements(newMovements, sheets);
   // await updateMapped(sheets, mapped);
   // await insertMovements(newMovements, sheets, INSERT_RANGE);
-  await addManually(newMovements);
+  await addManually(newMovements, sheets);
   printResults(newMovements);
 };
 
@@ -218,14 +220,14 @@ const parseForInsert = (movements) => {
 };
 
 
-const addManually = async (movements) => {
+const addManually = async (movements, sheets) => {
   const missing = movements.map((element) => { return element.Mapped ? null : element; });
 
   for (let i = 0; i < missing.length; i++) {
     const element = missing[i];
     if (element) {
       const shouldAdd = await shouldManuallyAdd(element);
-      if (shouldAdd) await manuallyAdd(element);
+      if (shouldAdd) await manuallyAdd(element, sheets);
     }
   }
 };
@@ -233,41 +235,25 @@ const addManually = async (movements) => {
 const shouldManuallyAdd = async (element) => {
   console.log('Desea agregar manualmente:');
   console.log('', Object.values(element).join(' '));
-  const result = await ask('Ingrese s/n');
+  const result = await UserInterface.ask('Ingrese s/n');
   return result.toLowerCase() === 's';
 };
 
-const ask = (question, options) => {
-  return new Promise((resolve) => {
-    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-    let fullQuestion = question;
-    if (options) fullQuestion += ` (Posibles opciones: ${options.join(', ')})`;
-    rl.question(`${fullQuestion}\n`, (result) => {
-      rl.close();
-      if (options && options.indexOf(result) === -1) {
-        console.log(result, 'no encontrado, intentar nuevamente');
-        return resolve(ask(question, options));
-      }
-      return resolve(result);
-    });
-  });
-};
 
-const manuallyAdd = async (element) => {
-  console.log('manualy add!', element);
-  // const isIngreso = !!element.Abono;
-  // const values = {};
-  // values.categoria = await Formulario.askCategory(isIngreso);
-  // values.item = await ask('Item:');
-  // values.description = await ask('Descripción:');
-  // values.fechaEmision = element.Fecha;
-  // values.monto = element.Abono || element.Cargo;
-  // values.mesDevengado = toMonth(element.Fecha);
-  // values.fechaPago = element.fechaEmision;
-  // values.atp = await ask('ATP:', ['Si', 'No']);
-  // await Formulario.prefill(values, isIngreso);
-  // await ask('Datos rellenados exitosamente. Ir a formulario.');
-  // return values;
+const manuallyAdd = async (element, sheets) => {
+  const isIngreso = !!element.Abono;
+  const values = {};
+  values.categoria = await Formulario.askCategory(isIngreso, sheets);
+  values.item = await UserInterface.ask('Item:');
+  values.description = await UserInterface.ask('Descripción:');
+  values.fechaEmision = element.Fecha;
+  values.monto = element.Abono || element.Cargo;
+  values.fechaPago = element.Fecha;
+  values.mesDevengado = toMonth(element.Fecha);
+  values.atp = await UserInterface.ask('ATP:', ['Si', 'No']);
+  await Formulario.prefill(values, isIngreso);
+  await UserInterface.ask('Datos rellenados exitosamente. Ir a formulario.');
+  return values;
 };
 
 const toMonth = (input) => {

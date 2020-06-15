@@ -98,6 +98,7 @@ const read = (sheets, range, headers) => {
       if (err) return reject(err);
       const rows = res.data.values;
       const data = [];
+      if (!headers) return resolve(rows);
       for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
         const element = parseElement(row, headers);
