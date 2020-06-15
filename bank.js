@@ -9,8 +9,11 @@ const Cartola = require('./cartola');
 const CARTOLA_PATH = path.join(__dirname, 'bank.txt');
 const HEADERS = ['Fecha', 'Oficina', 'Descripción', 'Nº Documento', 'Cargo', 'Abono', 'Saldo'];
 const AMOUNT_HEADERS = ['Cargo', 'Abono', 'Saldo'];
-const BANK_CARTOLA_RANGE = 'Cartola Real!A4:G';
+const BANK_CARTOLA_RANGE = 'Cartola Real!A4:H';
 const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+const INSERT_RANGE = 'Cartola Real!A4:H4';
+const ONE_DAY = 1000 * 60 * 60 * 24;
+
 const readNewMovements = () => {
   const input = fs.readFileSync(CARTOLA_PATH, 'utf-8');
   const lines = input.split('\n');
@@ -54,9 +57,7 @@ const mapMovements = async (movements) => {
   const newMovements = getNewMovements(movements, bankCartola);
   const mapped = await mapNewMovements(newMovements, sheets);
   await updateMapped(sheets, mapped);
-  // await insertMovements();
-  // printMovementSummary();
-  // mapEntries(toMap);
+  await insertMovements(newMovements, sheets, INSERT_RANGE);
 };
 
 const getBankCartola = async (sheets) => {
@@ -173,7 +174,6 @@ const selectOption = (element, options) => {
 
 
 const updateMapped = async (sheets, mapped) => {
-  console.log(mapped.length);
   for (let i = 0; i < mapped.length; i++) {
     const entry = mapped[i];
     const row = entry.index + 4;
@@ -190,7 +190,29 @@ const updateEntry = (row, entry, sheets) => {
   const amount = entry.Abono ? entry.Abono : -1 * entry.Cargo;
   column = alphabet[Cartola.HEADERS.indexOf(amountKey) + 1];
   promises.push(spreadsheet.updateCell(sheets, `Debug!${column}${row}`, amount));
+  column = alphabet[Cartola.HEADERS.indexOf('Fecha de Pago') + 1];
+  promises.push(spreadsheet.updateCell(sheets, `Debug!${column}${row}`, DATEVALUE(entry.Fecha)));
   return Promise.all(promises);
+};
+
+const DATEVALUE = (input) => {
+  const pivot = new Date('1899-12-30');
+  const compare = new Date(input);
+  return Math.floor((compare.getTime() - pivot.getTime()) / ONE_DAY);
+};
+
+const insertMovements = (movements, sheets, range) => {
+  const array = parseForInsert(movements);
+  return spreadsheet.insertRow(array, sheets, range);
+};
+
+const parseForInsert = (movements) => {
+  const parsed = [];
+  for (let i = 0; i < movements.length; i++) {
+    const element = movements[i];
+    parsed.push(Object.values(element));
+  }
+  return parsed;
 };
 
 module.exports = {
