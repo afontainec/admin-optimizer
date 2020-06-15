@@ -4,6 +4,7 @@ const { google } = require('googleapis');
 
 const TOKEN_PATH = 'token.json';
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
+const SPREADSHEET_ID = '1__yqPDZ-u9thqTn8uQrNmPwa7b5qA9tKo36ylgQGWUk';
 
 const connect = async () => {
   const content = JSON.parse(fs.readFileSync('credentials.json'));
@@ -87,7 +88,67 @@ const saveToken = (token) => {
 
 // #endregion
 
+const read = (sheets, range, headers) => {
+  return new Promise((resolve, reject) => {
+    sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range,
+    }, (err, res) => {
+      if (err) return reject(err);
+      const rows = res.data.values;
+      const data = [];
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const element = parseElement(row, headers);
+        if (element) data.push(element);
+      }
+      return resolve(data);
+    });
+  });
+};
+
+const parseElement = (input, headers) => {
+  const element = {};
+  if (!input || !input[0]) return null;
+  for (let i = 0; i < headers.length; i++) {
+    const header = headers[i];
+    element[header] = input[i];
+  }
+  return element;
+};
+
+const updateCell = (sheets, range, value) => {
+  return new Promise((resolve, reject) => {
+    sheets.spreadsheets.values.update({
+      spreadsheetId: SPREADSHEET_ID,
+      range,
+      valueInputOption: 'RAW',
+      resource: { values: [[value]] },
+    }, (err, res) => {
+      if (err) return reject(err);
+      return resolve(res);
+    });
+  });
+
+};
+
+const insertRow = (array, sheets, range) => {
+  return new Promise((resolve, reject) => {
+    sheets.spreadsheets.values.append({
+      spreadsheetId: SPREADSHEET_ID,
+      range,
+      valueInputOption: 'RAW',
+      resource: { values: array },
+    }, (err, res) => {
+      if (err) return reject(err);
+      return resolve(res);
+    });
+  });
+};
 
 module.exports = {
   connect,
+  read,
+  updateCell,
+  insertRow,
 };

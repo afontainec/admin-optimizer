@@ -2,6 +2,7 @@
 const path = require('path');
 const fs = require('fs');
 const sii = require('./sii');
+const { add } = require('./facturas');
 
 const CARTOLA_PATH = path.join(__dirname, 'bank.txt');
 const HEADERS = ['Fecha', 'Oficina', 'Descripción', 'Nº Documento', 'Cargo', 'Abono', 'Saldo'];
@@ -27,6 +28,25 @@ const addLine = (cartola, line) => {
   }
   cartola.push(entry);
 };
+
+
+const mapCarola = () => {
+  const current = getCurrent();
+  const toMap = addEntries(cartola, current);
+  mapEntries(toMap);
+};
+
+// const getCurrent = () => {
+//   spreadsheet.read(range, headers);
+// };
+
+// // const addEntries = () => {
+// //   for(entry)
+// //   const option = getBestOption(...);
+// //   if(!option) skip();
+// //   if(option.date === lastDate) askIfIsSame();
+// //   add(option);
+// // }
 
 
 module.exports = {

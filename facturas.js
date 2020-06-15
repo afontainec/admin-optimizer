@@ -3,7 +3,6 @@ const { google } = require('googleapis');
 const spreadsheet = require('./spreadsheet');
 
 
-const SPREADSHEET_ID = '1__yqPDZ-u9thqTn8uQrNmPwa7b5qA9tKo36ylgQGWUk';
 const RECIBIDOS_HEADERS = ['Nro.', 'RUT Emisor', 'Folio', 'Fecha Docto.', 'Monto Neto', 'Monto Exento', 'Monto IVA', 'Monto Total', 'Fecha Recep.', 'Evento Receptor', 'Mapped', 'Tipo DTE'];
 const RECIBIDOS_FOLIO = 2;
 const RECIBIDOS_INFO_RANGE = 'Facturas Rec.!B3:N';
@@ -26,7 +25,7 @@ const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const add = async (facturas) => {
   const auth = await spreadsheet.connect();
   const sheets = google.sheets({ version: 'v4', auth });
-  const cartola = await readRange(sheets, DEBUG_RANGE, DEBUG_HEADERS);
+  const cartola = await spreadsheet.read(sheets, DEBUG_RANGE, DEBUG_HEADERS);
   await addFacturasRecibidas(facturas.recieved, sheets, cartola);
   await addFacturasEmitidas(facturas.sent, sheets, cartola);
 };
@@ -34,7 +33,7 @@ const add = async (facturas) => {
 
 const addFacturasRecibidas = async (facturas, sheets, cartola) => {
   console.log('-------- FACTURAS RECIBIDAS');
-  const registered = await readRange(sheets, RECIBIDOS_INFO_RANGE, RECIBIDOS_HEADERS);
+  const registered = await spreadsheet.read(sheets, RECIBIDOS_INFO_RANGE, RECIBIDOS_HEADERS);
   const toAdd = getNewFacturas(facturas, registered, RECIBIDOS_FOLIO);
   const mapped = await mapToAdd(toAdd, cartola, 'Egreso', RECIBIDOS_AMOUNT_INDEX);
   await updateMapped(sheets, mapped, RECIBIDOS_FOLIO, 'Egreso', RECIBIDOS_AMOUNT_INDEX);
@@ -46,7 +45,7 @@ const addFacturasRecibidas = async (facturas, sheets, cartola) => {
 
 const addFacturasEmitidas = async (facturas, sheets, cartola) => {
   console.log('-------- FACTURAS EMITIDAS');
-  const registered = await readRange(sheets, EMITIDOS_INFO_RANGE, EMITIDOS_HEADERS);
+  const registered = await spreadsheet.read(sheets, EMITIDOS_INFO_RANGE, EMITIDOS_HEADERS);
   const toAdd = getNewFacturas(facturas, registered, EMITIDOS_FOLIO);
   const mapped = await mapToAdd(toAdd, cartola, 'Ingreso', EMITIDOS_AMOUNT_INDEX);
   await updateMapped(sheets, mapped, EMITIDOS_FOLIO, 'Ingreso', EMITIDOS_AMOUNT_INDEX);
@@ -56,35 +55,6 @@ const addFacturasEmitidas = async (facturas, sheets, cartola) => {
   return toAdd;
 };
 
-
-const readRange = (sheets, range, headers) => {
-  return new Promise((resolve, reject) => {
-    sheets.spreadsheets.values.get({
-      spreadsheetId: SPREADSHEET_ID,
-      range,
-    }, (err, res) => {
-      if (err) return reject(err);
-      const rows = res.data.values;
-      const data = [];
-      for (let i = 0; i < rows.length; i++) {
-        const row = rows[i];
-        const element = parseElement(row, headers);
-        if (element) data.push(element);
-      }
-      return resolve(data);
-    });
-  });
-};
-
-const parseElement = (input, headers) => {
-  const element = {};
-  if (!input || !input[0]) return null;
-  for (let i = 0; i < headers.length; i++) {
-    const header = headers[i];
-    element[header] = input[i];
-  }
-  return element;
-};
 
 // #region Facturas
 
@@ -117,17 +87,7 @@ const hash = (element, folio) => {
 };
 
 const insertFacturas = (array, sheets, range) => {
-  return new Promise((resolve, reject) => {
-    sheets.spreadsheets.values.append({
-      spreadsheetId: SPREADSHEET_ID,
-      range,
-      valueInputOption: 'RAW',
-      resource: { values: array },
-    }, (err, res) => {
-      if (err) return reject(err);
-      return resolve(res);
-    });
-  });
+  return spreadsheet.insertRow(array, sheets, range);
 };
 
 // #endregion
@@ -215,14 +175,14 @@ const updateMapped = async (sheets, mapped, folio, amountKey, amountIndex) => {
 const updateEntry = (row, factura, sheets, folio, amountKey, amountIndex) => {
   const promises = [];
   let column = alphabet[DEBUG_HEADERS.indexOf('Número de Factura') + 1];
-  promises.push(updateCell(sheets, `Debug!${column}${row}`, factura[folio]));
+  promises.push(spreadsheet.updateCell(sheets, `Debug!${column}${row}`, factura[folio]));
   column = alphabet[DEBUG_HEADERS.indexOf('Rut del Emisor') + 1];
-  promises.push(updateCell(sheets, `Debug!${column}${row}`, factura[1]));
+  promises.push(spreadsheet.updateCell(sheets, `Debug!${column}${row}`, factura[1]));
   column = alphabet[DEBUG_HEADERS.indexOf('Prioridad') + 1];
-  promises.push(updateCell(sheets, `Debug!${column}${row}`, 5));
+  promises.push(spreadsheet.updateCell(sheets, `Debug!${column}${row}`, 5));
   column = alphabet[DEBUG_HEADERS.indexOf(amountKey) + 1];
   const amount = parseAmountToInteger(factura[amountIndex], amountKey);
-  promises.push(updateCell(sheets, `Debug!${column}${row}`, amount));
+  promises.push(spreadsheet.updateCell(sheets, `Debug!${column}${row}`, amount));
   return Promise.all(promises);
 };
 
@@ -230,21 +190,6 @@ const parseAmountToInteger = (input, key) => {
   let result = Number.parseInt(input, 10);
   if (key === 'Egreso') result *= -1;
   return result;
-};
-
-
-const updateCell = (sheets, range, value) => {
-  return new Promise((resolve, reject) => {
-    sheets.spreadsheets.values.update({
-      spreadsheetId: SPREADSHEET_ID,
-      range,
-      valueInputOption: 'RAW',
-      resource: { values: [[value]] },
-    }, (err, res) => {
-      if (err) return reject(err);
-      return resolve(res);
-    });
-  });
 };
 
 
