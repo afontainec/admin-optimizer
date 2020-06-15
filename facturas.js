@@ -107,7 +107,6 @@ const mapToAdd = async (toAdd, cartola, cartolaIndex, elementIndex) => {
 // #region  getBestOptions
 const getBestOptions = (element, cartola, cartolaIndex, elementIndex) => {
   const options = [];
-  console.log(element, elementIndex);
   for (let i = 0; i < cartola.length; i++) {
     const entry = cartola[i];
     if (notMapped(entry)) {
@@ -115,7 +114,6 @@ const getBestOptions = (element, cartola, cartolaIndex, elementIndex) => {
       const entryAmount = parseAmount(entry[cartolaIndex]);
       const elementAmount = parseAmount(element[elementIndex]);
       const diff = getPorcentageDifference(entryAmount, elementAmount);
-      console.log(entryAmount, elementAmount, diff, entry['ítem']);
       if (diff < 15) options.push(entry);
     }
   }
