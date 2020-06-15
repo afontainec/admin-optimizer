@@ -58,8 +58,8 @@ const mapMovements = async (movements) => {
   const bankCartola = await getBankCartola(sheets);
   const newMovements = getNewMovements(movements, bankCartola);
   const mapped = await mapNewMovements(newMovements, sheets);
-  // await updateMapped(sheets, mapped);
-  // await insertMovements(newMovements, sheets, INSERT_RANGE);
+  await updateMapped(sheets, mapped);
+  await insertMovements(newMovements, sheets, INSERT_RANGE);
   await addManually(newMovements, sheets);
   printResults(newMovements);
 };

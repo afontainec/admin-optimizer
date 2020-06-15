@@ -51,7 +51,6 @@ const prefill = async (sheets, values, isIngreso) => {
     const key = keys[i];
     const value = values[key];
     const range = cells[key];
-    console.log(key, value, range);
     await spreadsheet.updateCell(sheets, range, value);
   }
 };
