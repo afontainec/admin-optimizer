@@ -245,20 +245,20 @@ const manuallyAdd = async (element, sheets) => {
   const values = {};
   values.categoria = await Formulario.askCategory(isIngreso, sheets);
   values.item = await UserInterface.ask('Item:');
-  values.description = await UserInterface.ask('Descripción:');
+  values.descripcion = await UserInterface.ask('Descripción:');
   values.fechaEmision = element.Fecha;
   values.monto = element.Abono || element.Cargo;
   values.fechaPago = element.Fecha;
   values.mesDevengado = toMonth(element.Fecha);
   values.atp = await UserInterface.ask('ATP:', ['Si', 'No']);
-  await Formulario.prefill(values, isIngreso);
-  await UserInterface.ask('Datos rellenados exitosamente. Ir a formulario.');
+  await Formulario.prefill(sheets, values, isIngreso);
+  await UserInterface.ask('Datos rellenados en formulario exitosamente. Ir a spreadsheet apretar ingresar y volver para aca.');
   return values;
 };
 
 const toMonth = (input) => {
   const date = new Date(input);
-  date.setDate(1);
+  date.setDate(0);
   return DATEVALUE(date);
 };
 
