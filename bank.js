@@ -120,6 +120,7 @@ const mapNewMovements = async (movements, bankCartola, sheets) => {
     const best = await selectOption(element, options);
     if (best) {
       element.Mapped = 1;
+      best.Pagado = '1';
       best.mappedTo = element;
       mapped.push(best);
     }
