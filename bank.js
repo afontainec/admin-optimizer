@@ -58,6 +58,7 @@ const mapMovements = async (movements) => {
   const mapped = await mapNewMovements(newMovements, sheets);
   await updateMapped(sheets, mapped);
   await insertMovements(newMovements, sheets, INSERT_RANGE);
+  printResults(newMovements);
 };
 
 const getBankCartola = async (sheets) => {
@@ -213,6 +214,22 @@ const parseForInsert = (movements) => {
     parsed.push(Object.values(element));
   }
   return parsed;
+};
+
+const printResults = (movements) => {
+  const mapped = movements.map((element) => { return element.Mapped ? element : null; });
+  const notMapped = movements.map((element) => { return element.Mapped ? null : element; });
+  console.log('Movimientos agregados y mapeados: ');
+  for (let i = 0; i < mapped.length; i++) {
+    const element = mapped[i];
+    if (element) console.log(Object.values(element).join(' '));
+  }
+  console.log('**', 'IMPORTANTE', '**');
+  console.log('Movimientos agregados POR mapear: ');
+  for (let i = 0; i < notMapped.length; i++) {
+    const element = notMapped[i];
+    if (element) console.log(Object.values(element).join(' '));
+  }
 };
 
 module.exports = {
