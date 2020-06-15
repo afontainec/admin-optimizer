@@ -110,4 +110,6 @@ const parseToDate = (data) => {
 
 module.exports = {
   readFacturas,
+  isDate,
+  parseToDate,
 };

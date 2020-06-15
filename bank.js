@@ -1,6 +1,7 @@
 
 const path = require('path');
 const fs = require('fs');
+const sii = require('./sii');
 
 const CARTOLA_PATH = path.join(__dirname, 'bank.txt');
 const HEADERS = ['Fecha', 'Oficina', 'Descripción', 'Nº Documento', 'Cargo', 'Abono', 'Saldo'];
@@ -21,7 +22,7 @@ const addLine = (cartola, line) => {
   const entry = {};
   for (let i = 0; i < HEADERS.length; i++) {
     const header = HEADERS[i];
-    const element = elements[i];
+    const element = sii.isDate(elements[i]) ? sii.parseToDate(elements[i]) : elements[i];
     entry[header] = element;
   }
   cartola.push(entry);

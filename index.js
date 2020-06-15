@@ -8,10 +8,9 @@ const f = async () => {
   // console.log('facturas obtenidas');
   // console.log('---------------- AGREGANDO FACTURAS');
   // await spreadsheet.addFacturas(facturas);
+  console.log('---------------- LEYENDO CARTOLA');
   const cartola = await bank.readCartola();
-  console.log(cartola);
-  // await spreadsheet.addCartola(cartola);
-  // await spreadsheet.mapCartola();
+  await spreadsheet.addCartola(cartola);
 };
 
 
