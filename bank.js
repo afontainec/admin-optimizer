@@ -218,7 +218,7 @@ const parseForInsert = (movements) => {
 
 const printResults = (movements) => {
   const mapped = movements.map((element) => { return element.Mapped ? element : null; });
-  const notMapped = movements.map((element) => { return element.Mapped ? null : element; });
+  const yetToMapped = movements.map((element) => { return element.Mapped ? null : element; });
   console.log('Movimientos agregados y mapeados: ');
   for (let i = 0; i < mapped.length; i++) {
     const element = mapped[i];
@@ -226,8 +226,8 @@ const printResults = (movements) => {
   }
   console.log('**', 'IMPORTANTE', '**');
   console.log('Movimientos agregados POR mapear: ');
-  for (let i = 0; i < notMapped.length; i++) {
-    const element = notMapped[i];
+  for (let i = 0; i < yetToMapped.length; i++) {
+    const element = yetToMapped[i];
     if (element) console.log(Object.values(element).join(' '));
   }
 };
