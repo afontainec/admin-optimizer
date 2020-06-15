@@ -105,7 +105,7 @@ const isDate = (element) => {
 
 const parseToDate = (data) => {
   const elements = data.split('/');
-  return `${elements[2]}/${elements[1]}/${elements[0]}`;
+  return `${elements[2]}-${elements[1]}-${elements[0]}`;
 };
 
 module.exports = {
