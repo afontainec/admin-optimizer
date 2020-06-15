@@ -1,5 +1,4 @@
 const readline = require('readline');
-const { google } = require('googleapis');
 const spreadsheet = require('./spreadsheet');
 
 
@@ -23,8 +22,7 @@ const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
 // #region ADD FACTURAS
 const add = async (facturas) => {
-  const auth = await spreadsheet.connect();
-  const sheets = google.sheets({ version: 'v4', auth });
+  const sheets = await spreadsheet.connect();
   const cartola = await spreadsheet.read(sheets, DEBUG_RANGE, DEBUG_HEADERS);
   await addFacturasRecibidas(facturas.recieved, sheets, cartola);
   await addFacturasEmitidas(facturas.sent, sheets, cartola);

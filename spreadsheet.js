@@ -8,8 +8,9 @@ const SPREADSHEET_ID = '1__yqPDZ-u9thqTn8uQrNmPwa7b5qA9tKo36ylgQGWUk';
 
 const connect = async () => {
   const content = JSON.parse(fs.readFileSync('credentials.json'));
-  const client = await authorize(content);
-  return client;
+  const auth = await authorize(content);
+  const sheets = google.sheets({ version: 'v4', auth });
+  return sheets;
 };
 
 // #region authenticate
