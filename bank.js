@@ -10,7 +10,7 @@ const CARTOLA_PATH = path.join(__dirname, 'bank.txt');
 const HEADERS = ['Fecha', 'Oficina', 'Descripción', 'Nº Documento', 'Cargo', 'Abono', 'Saldo'];
 const AMOUNT_HEADERS = ['Cargo', 'Abono', 'Saldo'];
 const BANK_CARTOLA_RANGE = 'Cartola Real!A4:G';
-
+const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const readNewMovements = () => {
   const input = fs.readFileSync(CARTOLA_PATH, 'utf-8');
   const lines = input.split('\n');
@@ -53,7 +53,7 @@ const mapMovements = async (movements) => {
   const bankCartola = await getBankCartola(sheets);
   const newMovements = getNewMovements(movements, bankCartola);
   const mapped = await mapNewMovements(newMovements, sheets);
-  // await updateMapped(mapped);
+  await updateMapped(sheets, mapped);
   // await insertMovements();
   // printMovementSummary();
   // mapEntries(toMap);
@@ -109,7 +109,7 @@ const hash = (value) => {
 
 // #endregion
 
-
+// #region MAP NEW MOVEMENTS
 const mapNewMovements = async (movements, bankCartola, sheets) => {
   const cartola = await Cartola.get(sheets);
   const mapped = [];
@@ -169,6 +169,29 @@ const selectOption = (element, options) => {
   });
 };
 
+// #endregion
+
+
+const updateMapped = async (sheets, mapped) => {
+  console.log(mapped.length);
+  for (let i = 0; i < mapped.length; i++) {
+    const entry = mapped[i];
+    const row = entry.index + 4;
+    // eslint-disable-next-line no-await-in-loop
+    await updateEntry(row, entry.mappedTo, sheets);
+  }
+};
+
+const updateEntry = (row, entry, sheets) => {
+  const promises = [];
+  let column = alphabet[Cartola.HEADERS.indexOf('Pagado') + 1];
+  promises.push(spreadsheet.updateCell(sheets, `Debug!${column}${row}`, 1));
+  const amountKey = entry.Abono ? 'Ingreso' : 'Egreso';
+  const amount = entry.Abono ? entry.Abono : -1 * entry.Cargo;
+  column = alphabet[Cartola.HEADERS.indexOf(amountKey) + 1];
+  promises.push(spreadsheet.updateCell(sheets, `Debug!${column}${row}`, amount));
+  return Promise.all(promises);
+};
 
 module.exports = {
   readNewMovements,
