@@ -14,7 +14,6 @@ const AMOUNT_HEADERS = ['Cargo', 'Abono', 'Saldo'];
 const BANK_CARTOLA_RANGE = 'Cartola Real!A4:H';
 const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const INSERT_RANGE = 'Cartola Real!A4:H4';
-const ONE_DAY = 1000 * 60 * 60 * 24;
 
 const readNewMovements = () => {
   const input = fs.readFileSync(CARTOLA_PATH, 'utf-8');
@@ -195,14 +194,8 @@ const updateEntry = (row, entry, sheets) => {
   column = alphabet[Cartola.HEADERS.indexOf(amountKey) + 1];
   promises.push(spreadsheet.updateCell(sheets, `Debug!${column}${row}`, amount));
   column = alphabet[Cartola.HEADERS.indexOf('Fecha de Pago') + 1];
-  promises.push(spreadsheet.updateCell(sheets, `Debug!${column}${row}`, DATEVALUE(entry.Fecha)));
+  promises.push(spreadsheet.updateCell(sheets, `Debug!${column}${row}`, spreadsheet.DATEVALUE(entry.Fecha)));
   return Promise.all(promises);
-};
-
-const DATEVALUE = (input) => {
-  const pivot = new Date('1899-12-30');
-  const compare = new Date(input);
-  return Math.floor((compare.getTime() - pivot.getTime()) / ONE_DAY);
 };
 
 const insertMovements = (movements, sheets, range) => {
@@ -249,7 +242,7 @@ const manuallyAdd = async (element, sheets) => {
   values.fechaEmision = element.Fecha;
   values.monto = element.Abono || element.Cargo;
   values.fechaPago = element.Fecha;
-  values.mesDevengado = toMonth(element.Fecha);
+  values.mesDevengado = Formulario.toMonth(element.Fecha);
   values.atp = await UserInterface.ask('ATP:', ['Si', 'No']);
   await Formulario.prefill(sheets, values, isIngreso);
   await UserInterface.ask('Datos rellenados en formulario exitosamente. Ir a spreadsheet apretar ingresar y volver para aca.');
@@ -257,11 +250,6 @@ const manuallyAdd = async (element, sheets) => {
   return values;
 };
 
-const toMonth = (input) => {
-  const date = new Date(input);
-  date.setDate(0);
-  return DATEVALUE(date);
-};
 
 const printResults = (movements) => {
   const mapped = movements.map((element) => { return element.Mapped ? element : null; });

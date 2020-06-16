@@ -2,6 +2,8 @@ const fs = require('fs');
 const readline = require('readline');
 const { google } = require('googleapis');
 
+const ONE_DAY = 1000 * 60 * 60 * 24;
+
 const TOKEN_PATH = 'token.json';
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
 const SPREADSHEET_ID = '1__yqPDZ-u9thqTn8uQrNmPwa7b5qA9tKo36ylgQGWUk';
@@ -148,9 +150,16 @@ const insertRow = (array, sheets, range) => {
   });
 };
 
+const DATEVALUE = (input) => {
+  const pivot = new Date('1899-12-30');
+  const compare = new Date(input);
+  return Math.floor((compare.getTime() - pivot.getTime()) / ONE_DAY);
+};
+
 module.exports = {
   connect,
   read,
   updateCell,
   insertRow,
+  DATEVALUE,
 };

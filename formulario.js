@@ -56,7 +56,14 @@ const prefill = async (sheets, values, isIngreso) => {
 };
 
 
+const toMonth = (input) => {
+  const date = new Date(input);
+  date.setDate(0);
+  return spreadsheet.DATEVALUE(date);
+};
+
 module.exports = {
   askCategory,
   prefill,
+  toMonth,
 };

@@ -1,6 +1,10 @@
+/* eslint-disable no-await-in-loop */
+
 const readline = require('readline');
 const spreadsheet = require('./spreadsheet');
 const Cartola = require('./cartola');
+const UserInterface = require('./interface');
+const Formulario = require('./formulario');
 
 const RECIBIDOS_HEADERS = ['Nro.', 'RUT Emisor', 'Folio', 'Fecha Docto.', 'Monto Neto', 'Monto Exento', 'Monto IVA', 'Monto Total', 'Fecha Recep.', 'Evento Receptor', 'Mapped', 'Tipo DTE'];
 const RECIBIDOS_FOLIO = 2;
@@ -21,9 +25,9 @@ const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 // #region ADD FACTURAS
 const add = async (facturas) => {
   const sheets = await spreadsheet.connect();
-  const cartola = Cartola.get(sheets);
+  const cartola = await Cartola.get(sheets);
   await addFacturasRecibidas(facturas.recieved, sheets, cartola);
-  await addFacturasEmitidas(facturas.sent, sheets, cartola);
+  // await addFacturasEmitidas(facturas.sent, sheets, cartola);
 };
 
 
@@ -33,10 +37,11 @@ const addFacturasRecibidas = async (facturas, sheets, cartola) => {
   const toAdd = getNewFacturas(facturas, registered, RECIBIDOS_FOLIO);
   const mapped = await mapToAdd(toAdd, cartola, 'Egreso', RECIBIDOS_AMOUNT_INDEX);
   await updateMapped(sheets, mapped, RECIBIDOS_FOLIO, 'Egreso', RECIBIDOS_AMOUNT_INDEX);
-  await insertFacturas(toAdd, sheets, RECIBIDOS_INSERT_RANGE);
-  console.log('Facturas Recibidas Agregadas', toAdd.length);
-  for (let i = 0; i < toAdd.length; i++) { console.log(toAdd[i].join(' ')); }
-  return toAdd;
+  await addManually(toAdd, sheets, false);
+  // await insertFacturas(toAdd, sheets, RECIBIDOS_INSERT_RANGE);
+  // console.log('Facturas Recibidas Agregadas', toAdd.length);
+  // for (let i = 0; i < toAdd.length; i++) { console.log(toAdd[i].join(' ')); }
+  // return toAdd;
 };
 
 const addFacturasEmitidas = async (facturas, sheets, cartola) => {
@@ -185,6 +190,47 @@ const parseAmountToInteger = (input, key) => {
   if (key === 'Egreso') result *= -1;
   return result;
 };
+
+
+// #region ADD MANUALLY
+
+const addManually = async (toAdd, sheets, isIngreso) => {
+  const missing = toAdd.map((element) => { return element[element.length - 1] !== 1 ? element : null; });
+  for (let i = 0; i < missing.length; i++) {
+    const element = missing[i];
+    if (element) {
+      const shouldAdd = await shouldManuallyAdd(element);
+      if (shouldAdd) await manuallyAdd(element, sheets, isIngreso);
+    }
+  }
+};
+
+const shouldManuallyAdd = async (element) => {
+  console.log('Desea agregar manualmente:');
+  console.log('', element.join(' '));
+  const result = await UserInterface.ask('Ingrese s/n');
+  return result.toLowerCase() === 's';
+};
+
+const manuallyAdd = async (element, sheets, isIngreso) => {
+  const values = {};
+  values.categoria = await Formulario.askCategory(isIngreso, sheets);
+  values.item = await UserInterface.ask('Item:');
+  values.descripcion = await UserInterface.ask('Descripción:');
+  const date = isIngreso ? element[9] : element[3];
+  values.fechaEmision = date;
+  values.monto = isIngreso ? element[EMITIDOS_AMOUNT_INDEX] : element[RECIBIDOS_AMOUNT_INDEX];
+  values.monto = Number.parseInt(values.monto, 10);
+  values.fechaPago = date;
+  values.mesDevengado = Formulario.toMonth(date);
+  values.atp = await UserInterface.ask('ATP:', ['Si', 'No']);
+  await Formulario.prefill(sheets, values, isIngreso);
+  await UserInterface.ask('Datos rellenados en formulario exitosamente. Ir a spreadsheet apretar ingresar y volver para aca.');
+  element.Mapped = 1;
+  return values;
+};
+
+// #endregion
 
 
 module.exports = {
