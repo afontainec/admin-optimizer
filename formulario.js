@@ -15,6 +15,8 @@ const INGRESO_CELLS = {
   mesDevengado: 'FORMULARIO!C16',
   fechaPago: 'FORMULARIO!C18',
   atp: 'FORMULARIO!C20',
+  folio: 'FORMULARIO!F6',
+  rut: 'FORMULARIO!F8',
 };
 
 const EGRESO_CELLS = {
@@ -26,6 +28,8 @@ const EGRESO_CELLS = {
   mesDevengado: 'FORMULARIO!C40',
   fechaPago: 'FORMULARIO!C42',
   atp: 'FORMULARIO!C44',
+  folio: 'FORMULARIO!F30',
+  rut: 'FORMULARIO!F32',
 };
 
 const getCategorias = (isIngreso, sheets) => {
