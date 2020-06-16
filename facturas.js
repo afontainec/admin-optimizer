@@ -12,12 +12,15 @@ const RECIBIDOS_INFO_RANGE = 'Facturas Rec.!B3:N';
 const RECIBIDOS_INSERT_RANGE = 'Facturas Rec.!B4:N4';
 const RECIBIDOS_AMOUNT_INDEX = RECIBIDOS_HEADERS.indexOf('Monto Total');
 const RECIBIDOS_RUT_INDEX = RECIBIDOS_HEADERS.indexOf('RUT Emisor');
+const RECIBIDOS_FECHA_INDEX = RECIBIDOS_HEADERS.indexOf('Fecha Docto.');
 
-const EMITIDOS_HEADERS = ['Nro.', 'RUT Receptor', 'Empresa', 'Folio', 'Total Reparos', 'Monto Neto', 'Monto Exento', 'Monto IVA', 'Monto Total', 'Fecha Recep.', 'Evento Receptor', 'Mapped'];
+
+const EMITIDOS_HEADERS = ['Nro.', 'RUT Receptor', 'Empresa', 'Folio', 'Fecha Docto.', 'Total Reparos', 'Monto Neto', 'Monto Exento', 'Monto IVA', 'Monto Total', 'Fecha Recep.', 'Evento Receptor', 'Mapped'];
 const EMITIDOS_FOLIO = 3;
 const EMITIDOS_INFO_RANGE = 'Facturas Emi.!B3:Z';
 const EMITIDOS_INSERT_RANGE = 'Facturas Emi.!B4:Z4';
-const EMITIDOS_AMOUNT_INDEX = 9;
+const EMITIDOS_AMOUNT_INDEX = EMITIDOS_HEADERS.indexOf('Monto Total');
+const EMITIDOS_FECHA_INDEX = EMITIDOS_HEADERS.indexOf('Fecha Docto.');
 const EMITIDOS_RUT_INDEX = EMITIDOS_HEADERS.indexOf('RUT Receptor');
 
 
@@ -220,7 +223,7 @@ const manuallyAdd = async (element, sheets, isIngreso) => {
   values.categoria = await Formulario.askCategory(isIngreso, sheets);
   values.item = await UserInterface.ask('Item:');
   values.descripcion = await UserInterface.ask('Descripción:');
-  const date = isIngreso ? element[9] : element[3];
+  const date = isIngreso ? element[EMITIDOS_FECHA_INDEX] : element[RECIBIDOS_FECHA_INDEX];
   values.fechaEmision = date;
   values.monto = isIngreso ? element[EMITIDOS_AMOUNT_INDEX] : element[RECIBIDOS_AMOUNT_INDEX];
   values.monto = Number.parseInt(values.monto, 10);
