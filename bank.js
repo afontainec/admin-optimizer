@@ -59,8 +59,8 @@ const mapMovements = async (movements) => {
   const newMovements = getNewMovements(movements, bankCartola);
   const mapped = await mapNewMovements(newMovements, sheets);
   await updateMapped(sheets, mapped);
-  await insertMovements(newMovements, sheets, INSERT_RANGE);
   await addManually(newMovements, sheets);
+  await insertMovements(newMovements, sheets, INSERT_RANGE);
   printResults(newMovements);
 };
 
@@ -253,6 +253,7 @@ const manuallyAdd = async (element, sheets) => {
   values.atp = await UserInterface.ask('ATP:', ['Si', 'No']);
   await Formulario.prefill(sheets, values, isIngreso);
   await UserInterface.ask('Datos rellenados en formulario exitosamente. Ir a spreadsheet apretar ingresar y volver para aca.');
+  element.Mapped = 1;
   return values;
 };
 
