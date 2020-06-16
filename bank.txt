@@ -1,3 +1,1 @@
 Fecha	Oficina	Descripción	Nº Documento	Cargo $	Abono $	Saldo $
-20/06/2020	ELIMINARME CENTRAL	Cargo Cuenta BCI	0	400.000		4.736.245
-20/06/2020	ELIMINARME CENTRAL	Cargo Cuenta BCI	0	4.000		4.736.245

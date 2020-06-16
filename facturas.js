@@ -41,11 +41,11 @@ const addFacturasRecibidas = async (facturas, sheets, cartola) => {
   const registered = await spreadsheet.read(sheets, RECIBIDOS_INFO_RANGE, RECIBIDOS_HEADERS);
   const toAdd = getNewFacturas(facturas, registered, RECIBIDOS_FOLIO);
   const mapped = await mapToAdd(toAdd, cartola, 'Egreso', RECIBIDOS_AMOUNT_INDEX);
-  // await updateMapped(sheets, mapped, RECIBIDOS_FOLIO, 'Egreso', RECIBIDOS_AMOUNT_INDEX);
+  await updateMapped(sheets, mapped, RECIBIDOS_FOLIO, 'Egreso', RECIBIDOS_AMOUNT_INDEX);
   await addManually(toAdd, sheets, false);
-  // await insertFacturas(toAdd, sheets, RECIBIDOS_INSERT_RANGE);
-  // console.log('Facturas Recibidas Agregadas', toAdd.length);
-  // for (let i = 0; i < toAdd.length; i++) { console.log(toAdd[i].join(' ')); }
+  await insertFacturas(toAdd, sheets, RECIBIDOS_INSERT_RANGE);
+  console.log('Facturas Recibidas Agregadas', toAdd.length);
+  for (let i = 0; i < toAdd.length; i++) { console.log(toAdd[i].join(' ')); }
   return toAdd;
 };
 
@@ -54,11 +54,11 @@ const addFacturasEmitidas = async (facturas, sheets, cartola) => {
   const registered = await spreadsheet.read(sheets, EMITIDOS_INFO_RANGE, EMITIDOS_HEADERS);
   const toAdd = getNewFacturas(facturas, registered, EMITIDOS_FOLIO);
   const mapped = await mapToAdd(toAdd, cartola, 'Ingreso', EMITIDOS_AMOUNT_INDEX);
-  // await updateMapped(sheets, mapped, EMITIDOS_FOLIO, 'Ingreso', EMITIDOS_AMOUNT_INDEX);
+  await updateMapped(sheets, mapped, EMITIDOS_FOLIO, 'Ingreso', EMITIDOS_AMOUNT_INDEX);
   await addManually(toAdd, sheets, true);
-  // await insertFacturas(toAdd, sheets, EMITIDOS_INSERT_RANGE);
-  // console.log('Facturas Emitidas Agregadas', toAdd.length);
-  // for (let i = 0; i < toAdd.length; i++) { console.log(toAdd[i].join(' ')); }
+  await insertFacturas(toAdd, sheets, EMITIDOS_INSERT_RANGE);
+  console.log('Facturas Emitidas Agregadas', toAdd.length);
+  for (let i = 0; i < toAdd.length; i++) { console.log(toAdd[i].join(' ')); }
   return toAdd;
 };
 
@@ -234,7 +234,7 @@ const manuallyAdd = async (element, sheets, isIngreso) => {
   values.rut = isIngreso ? element[EMITIDOS_RUT_INDEX] : element[RECIBIDOS_RUT_INDEX];
   await Formulario.prefill(sheets, values, isIngreso);
   await UserInterface.ask('Datos rellenados en formulario exitosamente. Ir a spreadsheet apretar ingresar y volver para aca.');
-  element.Mapped = 1;
+  element.push(1); // ADD MAPPED
   return values;
 };
 
