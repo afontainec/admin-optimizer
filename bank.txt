@@ -1,1 +1,0 @@
-Fecha	Oficina	Descripción	Nº Documento	Cargo $	Abono $	Saldo $
